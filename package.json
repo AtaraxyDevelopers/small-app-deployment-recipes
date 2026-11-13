@@ -1,0 +1,26 @@
+{
+  "name": "@ataraxydevelopers/small-app-deployment-recipes",
+  "version": "0.1.0",
+  "description": "A runnable persistent Node.js app with backup, restore, container, and rollback exercises.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "author": "Ataraxy Developers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AtaraxyDevelopers/small-app-deployment-recipes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AtaraxyDevelopers/small-app-deployment-recipes/issues"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/cli.mjs",
+    "demo": "node scripts/demo.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
+    "test:container": "node scripts/container-smoke.mjs"
+  }
+}

@@ -1,0 +1,18 @@
+services:
+  app:
+    image: ${APP_IMAGE:-ataraxy-notes:local}
+    build:
+      context: .
+    environment:
+      APP_TOKEN: ${APP_TOKEN:?Set APP_TOKEN before starting}
+    ports:
+      - '127.0.0.1:4340:4340'
+    volumes:
+      - notes:/app/data
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 15s
+volumes:
+  notes:
