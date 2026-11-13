@@ -1,59 +1,136 @@
 # Deployment and recovery exercise
 
-## Run a persistent local service
+Run commands from the repository root after npm ci. The examples below use synthetic
+notes. The self-contained npm run demo needs no configuration and cleans up afterward.
 
-Generate a token with:
+## Start a persistent local service
 
-    node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+Run setup once. It writes a random APP_TOKEN, PORT=4340, and DATA_DIR=./data into .env.
+The token is not printed. Existing .env files are preserved; if setup says one already
+exists, keep it and continue. Both local scripts load this same file. Existing shell
+environment values take precedence over values in the file.
 
-Set APP_TOKEN in your environment: PowerShell uses $env:APP_TOKEN = 'generated-value';
-bash/zsh uses export APP_TOKEN='generated-value'. Then run npm start.
-The service binds to 127.0.0.1:4340 and writes data/notes.json. Do not commit the token.
-GET /health is public. GET and POST /notes require Authorization: Bearer YOUR_TOKEN.
-POST accepts JSON {"text":"A synthetic note"}. Maximum 500 notes, 2,000 characters each.
+```sh
+npm run setup:local
+npm run start:local
+```
+
+Wait for `Notes service listening on 127.0.0.1:4340`. Leave this terminal open.
+In a **second terminal in the same folder**, run:
+
+```sh
+npm run request:local -- add "A synthetic note"
+npm run request:local -- list
+```
+
+The first command prints the created note, including an ID and timestamp. The second
+prints a notes array containing it. IDs and timestamps vary. The client reads the
+secret from .env and sends the Authorization header for you. The data stays in
+data/notes.json after restart. Press **Ctrl+C in the first terminal** to stop the server.
+
+The API has public GET /health and authenticated GET/POST /notes. POST accepts
+{"text":"A synthetic note"}. Limits are 500 notes and 2,000 characters per note.
+The optional APP_URL environment variable selects another local HTTP address for
+the request client. For shell-managed configuration, use npm start with APP_TOKEN
+set to a secret of at least 20 characters. No tokens are accepted in URLs.
 
 ## Back up and restore
 
-1. Stop the process to establish a clear backup point.
-2. Run npm run backup -- data/notes.json backup.json.
-3. Create a new empty directory named recovered.
-4. Run npm run restore -- backup.json recovered/notes.json.
-5. Set DATA_DIR to the absolute recovered directory and restart the app.
-6. Read /notes with your token and verify the expected records.
+**Stop the server with Ctrl+C first.** Then create backup and restore directories:
 
-Both commands refuse to overwrite existing files. Restore verifies schema and
-SHA-256 checksum before creating its output. A checksum detects accidental corruption;
-it does not authenticate an archive from an untrusted source. Keep backups private,
-encrypted where required, and outside the live data directory. The demo performs
-the entire exercise in temporary directories and removes its own data afterward.
+```sh
+node -e "const fs=require('node:fs');fs.mkdirSync('backups',{recursive:true});fs.mkdirSync('recovered',{recursive:true})"
+npm run backup -- data/notes.json backups/notes.backup.json
+npm run restore -- backups/notes.backup.json recovered/notes.json
+```
 
-## Containers
+Expected messages: `Backup written and checksummed.` and `Backup verified and restored
+to a new file.` The commands refuse to overwrite existing files. For another exercise,
+choose new backup and restore filenames; keep existing backups until you no longer
+need them. Restore checks schema and SHA-256 before creating its output.
 
-With Docker and Compose installed, set APP_TOKEN and run:
+Start the app against the recovered directory using **one** block for your shell:
 
-    docker compose up --build -d
-    docker compose logs --tail 50
-    docker compose down
+PowerShell:
 
-The named data volume persists after down. Do not use down -v if you need the data.
-The image runs as the node user with a read-only root filesystem. The published port
-binds to host loopback. The smoke test builds two image versions, creates one isolated
-test volume, writes a note, upgrades, rolls back the image, and verifies the same note.
+```powershell
+$env:DATA_DIR = (Resolve-Path recovered).Path
+npm run start:local
+```
 
-    npm run test:container
+bash or zsh:
 
-For a real release, tag and retain an immutable tested image. Set APP_IMAGE to that
-image in the environment, then use docker compose up -d --no-build. To roll back,
-set APP_IMAGE to the previous retained image and repeat. Confirm /health and the
-authenticated notes endpoint afterward. Never assume an older binary can read a
-new schema; this exercise deliberately keeps schemaVersion:1 across both images.
+```sh
+DATA_DIR="$PWD/recovered" npm run start:local
+```
+
+In your second terminal, verify the restored note:
+
+```sh
+npm run request:local -- list
+```
+
+Stop the recovered server with Ctrl+C. PowerShell users can remove the temporary
+override with `Remove-Item Env:DATA_DIR` before returning to the original data folder.
+Backups and recovered data are ignored by Git. A checksum detects accidental damage;
+it does not authenticate an archive from an untrusted source. Keep backups private
+and encrypted where appropriate.
+
+## Run with Docker Compose
+
+Install Docker with Compose support and start its engine. The same .env created by
+setup:local supplies APP_TOKEN to Compose automatically. Stop any local service using
+port 4340, then run:
+
+```sh
+docker compose up --build -d
+docker compose logs --tail 50
+npm run request:local -- add "A container note"
+npm run request:local -- list
+docker compose down
+```
+
+The named volume persists after down. Do not use down -v when you need that data.
+The image runs as the node user with a read-only root filesystem; the published
+port binds to host loopback. Container data lives in the named volume, not ./data.
+
+To create a file backup from a running Compose deployment, stop writes and copy
+its data out before packaging the backup:
+
+```sh
+node -e "require('node:fs').mkdirSync('backups',{recursive:true})"
+docker compose stop app
+docker compose cp app:/app/data/notes.json backups/container-notes.json
+npm run backup -- backups/container-notes.json backups/container.backup.json
+docker compose start app
+```
+
+Use new export and backup filenames for subsequent backups. Restore the resulting
+archive into a fresh directory using the restore command above, then test it with
+the local app before deciding how to migrate or replace a container volume.
+
+## Automated image rollback exercise
+
+```sh
+npm run test:container
+```
+
+This builds two images, creates an isolated test volume, writes a note, upgrades,
+rolls back to the earlier image, and verifies the same note. It removes only its own
+test containers, images, and volume. Docker is required for this check; the ordinary
+npm test and npm run demo commands do not require it.
+
+For your own deployment, retain an immutable tested image and its previous version.
+Set APP_IMAGE to the chosen existing image and use docker compose up -d --no-build.
+To roll back, select the retained previous image and repeat. Confirm /health and the
+authenticated /notes endpoint. An older binary may not support a newer schema; this
+exercise deliberately keeps schemaVersion:1 across both images.
 
 ## Deployment boundaries
 
-This is a single-process teaching service with local JSON storage, not a distributed
-database. Do not run multiple writers against the same directory. Atomic rename
-reduces partial-file risk but does not provide crash-durable fsync guarantees. Before
-internet exposure, add TLS termination, appropriate authentication and authorization,
-rate limits, monitoring, storage durability, and a tested operational policy. The
-Docker base tag follows Node 24 security updates; record a digest for a reproducible
-production artifact. No cloud account or paid hosting is needed for this exercise.
+This is a single-process teaching service with local JSON storage. Do not run multiple
+writers against the same directory. Atomic rename reduces partial-file risk but does
+not provide crash-durable fsync guarantees. Internet exposure requires an appropriate
+TLS, authentication, authorization, rate-limit, monitoring, and storage design. The
+Docker base tag follows Node 24 updates; record a digest for a reproducible production
+artifact. No cloud account or paid hosting is needed for this local exercise.

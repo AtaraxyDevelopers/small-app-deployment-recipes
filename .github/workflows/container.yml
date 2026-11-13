@@ -1,5 +1,10 @@
 name: Container recovery
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - '**'
+  pull_request: {}
+  workflow_dispatch: {}
 permissions:
   contents: read
 jobs:
@@ -13,3 +18,4 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run test:container
+      - run: npm run test:compose

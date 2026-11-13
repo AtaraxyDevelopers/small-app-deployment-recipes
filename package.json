@@ -1,6 +1,6 @@
 {
   "name": "@ataraxydevelopers/small-app-deployment-recipes",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A runnable persistent Node.js app with backup, restore, container, and rollback exercises.",
   "type": "module",
   "engines": {
@@ -21,6 +21,10 @@
     "demo": "node scripts/demo.mjs",
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
-    "test:container": "node scripts/container-smoke.mjs"
+    "test:container": "node scripts/container-smoke.mjs",
+    "setup:local": "node scripts/setup-local.mjs",
+    "start:local": "node --env-file=.env src/cli.mjs",
+    "request:local": "node --env-file=.env scripts/request.mjs",
+    "test:compose": "node scripts/compose-smoke.mjs"
   }
 }

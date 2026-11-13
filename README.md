@@ -9,7 +9,11 @@ An open-source project from [Ataraxy Developers](https://github.com/AtaraxyDevel
 
 ## Quick start
 
-Requires Node.js 22 or 24 and npm. Git is optional if you download the source ZIP.
+Install [Node.js](https://nodejs.org/en/download) 22 or 24 (npm is included). Check
+`node --version` and `npm --version` in your terminal. The commands below run from
+this repository's root folder, the one containing `package.json`.
+
+**With Git:**
 
 ```sh
 git clone https://github.com/AtaraxyDevelopers/small-app-deployment-recipes.git
@@ -17,6 +21,15 @@ cd small-app-deployment-recipes
 npm ci
 npm test
 ```
+
+**Without Git:** choose **Code → Download ZIP** on GitHub, extract the archive,
+and open a terminal in the extracted `small-app-deployment-recipes-main` folder (release archives may
+include the version in the folder name). Run `npm ci` and `npm test` there.
+Use the **source-code ZIP**, not an npm `.tgz` package, to follow this developer walkthrough.
+The install step may need internet access; the examples run locally afterward.
+
+On Windows PowerShell, if `npm.ps1` is blocked by execution policy, use `npm.cmd`
+in place of `npm` in these commands. No execution-policy change is required.
 
 Run the full backup-and-restore exercise without Docker:
 
@@ -36,6 +49,9 @@ and verifies the recovered note. Temporary files are cleaned up afterward.
 - Non-root Docker image, Compose configuration, and container health check.
 - Container smoke test that verifies persistence across upgrade and image rollback.
 
+For a persistent service, the operations guide includes copyable setup, request,
+backup, restore, and Docker commands for PowerShell and bash/zsh.
+
 Follow [docs/operations.md](docs/operations.md) for persistent local use, API requests,
 environment setup, backups, restoration, container deployment, and rollback.
 
@@ -45,6 +61,9 @@ environment setup, backups, restoration, container deployment, and rollback.
 persistence, exact recovery, tampered backups, and corrupt-store startup. With Docker
 available, `npm run test:container` builds and runs two actual images. CI runs the
 Node tests on three operating systems and the container exercise on Linux.
+`npm run test:compose` also checks the actual Compose setup, client requests,
+volume export, backup, restore, and restart instructions. Run it from a clean
+checkout with Docker available; it needs port 4340 and creates its own `.env`.
 
 ## Scope and limitations
 
@@ -52,6 +71,10 @@ This is a working deployment lab for a small single-process app. It uses synthet
 notes and local storage; it is not a claim of production readiness. The operations
 guide documents storage, authentication, backup, and deployment boundaries. It does
 not provision hosting or publish an app to the internet.
+
+## Expected first run
+
+The demo ends with `Restored and verified 1 note.` It generates its own temporary secret and data, stops both temporary servers, and removes its temporary files.
 
 ## Contributing and support
 

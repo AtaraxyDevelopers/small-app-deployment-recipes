@@ -6,7 +6,7 @@ try {
   const server = await createApp({
     directory: process.env.DATA_DIR ?? './data',
     token: process.env.APP_TOKEN,
-    version: process.env.APP_VERSION ?? '0.1.0',
+    version: process.env.APP_VERSION,
   });
   server.on('error', (e) => {
     console.error(e.message);

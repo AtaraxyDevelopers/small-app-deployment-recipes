@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+const { version: packageVersion } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { openStore } from './store.mjs';
-export async function createApp({ directory, token, version = '0.1.0' } = {}) {
+export async function createApp({ directory, token, version = packageVersion } = {}) {
   if (typeof token !== 'string' || token.length < 20)
     throw new Error('APP_TOKEN must be at least 20 characters');
   const store = await openStore(directory);

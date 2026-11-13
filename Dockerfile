@@ -1,5 +1,5 @@
 FROM node:24-bookworm-slim
-ARG APP_VERSION=0.1.0
+ARG APP_VERSION=0.1.1
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=4340 DATA_DIR=/app/data APP_VERSION=$APP_VERSION
 WORKDIR /app
 COPY package.json package-lock.json ./
